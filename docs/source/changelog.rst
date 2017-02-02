@@ -1,19 +1,153 @@
+=========
 Changelog
 =========
 
-v0.6 (unreleased)
+v1.4
+----
+* Add support for custom certificate authorities via the ``ca_certs`` arg to
+  the ``ElasticSearch`` constructor.
+* Add support for client certificates via the ``client_cert`` arg.
+
+v1.3
+----
+* Add support for HTTPS.
+* Add username, password, and port kwargs to the constructor so you don't have
+  to repeat their values if they're the same across many servers.
+
+
+v1.2.4 (2015-05-21)
+-------------------
+* Don't crash when the ``query_params`` kwarg is omitted from calls to
+  ``send_request()``.
+
+
+v1.2.3 (2015-04-17)
+-------------------
+* Make ``delete_all_indexes()`` work.
+* Fix a bug in which specifying ``_all`` as an index name sometimes caused
+  doctype names to be treated as index names.
+
+
+v1.2.2 (2015-04-10)
+-------------------
+* Correct a typo in the ``bulk()`` docs.
+
+
+v1.2.1 (2015-04-09)
+-------------------
+* Update ES doc links, now that Elastic has changed domains and reorganized
+  its docs.
+* Require elasticsearch lib 1.3 or greater, as that's when it started exposing
+  ``ConnectionTimeout``.
+
+
+v1.2 (2015-03-06)
+-----------------
+* Make sure the Content-Length header gets set when calling ``create_index()``
+  with no explicit ``settings`` arg. This solves 411s when using nginx as a
+  proxy.
+* Add ``doc_as_upsert()`` arg to ``update()``.
+* Make ``bulk_chunks()`` compute perfectly optimal results, no longer ever
+  exceeding the byte limit unless a single document is over the limit on its own.
+
+
+v1.1 (2015-02-12)
+-----------------
+* Introduce new bulk API, supporting all types of bulk operations (index,
+  update, create, and delete), providing chunking via ``bulk_chunks()``, and
+  introducing per-action error-handling. All errors raise exceptions--even
+  individual failed operations--and the exceptions expose enough data to
+  identify operations for retrying or reporting. The design is decoupled in
+  case you want to create your own chunkers or operation builders.
+* Deprecate ``bulk_index()`` in favor of the more capable ``bulk()``.
+* Make one last update to ``bulk_index()``. It now catches individual
+  operation failures, raising ``BulkError``. Also add the ``index_field`` and
+  ``type_field`` args, allowing you to index across different indices and doc
+  types within one request.
+* ``ElasticSearch`` object now defaults to http://localhost:9200/ if you don't provide any node URLs.
+* Improve docs: give a better overview on the front page, and document how to
+  customize JSON encoding.
+
+
+v1.0 (2015-01-23)
 -----------------
 
-.. warning::
+* Switch to elasticsearch-py's transport and downtime-pooling machinery,
+  much of which was borrowed from us anyway.
+* Make bulk indexing (and likely other network things) 15 times faster.
+* Add a comparison with the official client to the docs.
+* Fix ``delete_by_query()`` to work with ES 1.0 and later.
+* Bring ``percolate()`` es_kwargs up to date.
+* Fix all tests that were failing on modern versions of ES.
+* Tolerate errors that are non-strings and create exceptions for them properly.
+
+.. note::
+
+  Backward incompatible:
+
+  * Drop compatibility with elasticsearch < 1.0.
+  * Redo ``cluster_state()`` to work with ES 1.0 and later. Arguments have
+    changed.
+  * InvalidJsonResponseError no longer provides access to the HTTP response
+    (in the ``response`` property): just the bad data (the ``input`` property).
+  * Change from the logger "pyelasticsearch" to "elasticsearch.trace".
+  * Remove ``revival_delay`` param from ElasticSearch object.
+  * Remove ``encode_body`` param from ``send_request()``. Now all dicts are
+    JSON-encoded, and all strings are left alone.
+
+
+v0.7.1 (2014-08-12)
+-------------------
+
+* Brings tests up to date with ``update_aliases()`` API change.
+
+
+v0.7 (2014-08-12)
+-----------------
+
+* When an ``id_field`` is specified for ``bulk_index()``, don't index it under
+  its original name as well; use it only as the ``_id``.
+* Rename ``aliases()`` to ``get_aliases()`` for consistency with other
+  methods. Original name still works but is deprecated. Add an ``alias`` kwarg
+  to the method so you can fetch specific aliases.
+
+.. note::
+
+  Backward incompatible:
+
+  * ``update_aliases()`` no longer requires a dict with an ``actions`` key;
+    that much is implied. Just pass the value of that key.
+
+
+v0.6.1 (2013-11-01)
+-------------------
+
+* Update package requirements to allow requests 2.0, which is in fact
+  compatible. (Natim)
+* Properly raise ``IndexAlreadyExistsException`` even if the error is reported
+  by a node other than the one to which the client is directly connected.
+  (Jannis Leidel)
+
+
+v0.6 (2013-07-23)
+-----------------
+
+.. note::
 
   Note the change in behavior of ``bulk_index()`` in this release. This change
   probably brings it more in line with your expectations. But double check,
   since it now overwrites existing docs in situations where it didn't before.
 
+  Also, we made a backward-incompatible spelling change to a little-used
+  ``index()`` kwarg.
+
 * ``bulk_index()`` now overwrites any existing doc of the same ID and doctype.
-  Before, it did nothing at all if a document already existed, probably much to
-  your surprise. (We removed the ``'op_type': 'create'`` pair, whose intentions
-  were always mysterious.) (Gavin Carothers)
+  Before, in certain versions of ES (like 0.90RC2), it did nothing at all if a
+  document already existed, probably much to your surprise. (We removed the
+  ``'op_type': 'create'`` pair, whose intentions were always mysterious.)
+  (Gavin Carothers)
+* Rename the ``force_insert`` kwarg of ``index()`` to ``overwrite_existing``.
+  The old name implied the opposite of what it actually did. (Gavin Carothers)
 
 
 v0.5 (2013-04-20)
@@ -92,7 +226,7 @@ Many thanks to Erik Rose for almost completely rewriting the API to follow
 best practices, improve the API user experience, and make pyelasticsearch
 future-proof.
 
-.. warning::
+.. note::
 
   This release is **backward-incompatible** in numerous ways, please
   read the following section carefully. If in doubt, you can easily stick

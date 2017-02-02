@@ -13,11 +13,10 @@ forward compatibility and will be unprefixed and converted to strings as
 discussed in :doc:`features`.
 
 
-ElasticSearch API
-=================
+ElasticSearch Class
+===================
 
 .. py:module:: pyelasticsearch
-
 
 Unless otherwise indicated, methods return the JSON-decoded response sent by
 elasticsearch. This way, you don't lose any part of the return value, no matter
@@ -26,13 +25,38 @@ so it'll be hard to miss.
 
 .. autoclass:: ElasticSearch
 
-    .. automethod:: aliases(index=None[, other kwargs listed below])
+    .. autoattribute:: json_encoder
+
+Bulk Indexing Methods
+---------------------
+
+.. class:: ElasticSearch
+
+    .. automethod:: bulk(actions, index=None, doc_type=None[, other kwargs listed below])
+
+    .. automethod:: index_op
+
+    .. automethod:: delete_op
+
+    .. automethod:: update_op
 
     .. automethod:: bulk_index(index, doc_type, docs, id_field='id', parent_field='_parent'[, other kwargs listed below])
 
+There's also a helper function, outside the ElasticSearch class:
+
+.. autofunction:: bulk_chunks
+
+
+Other Methods
+-------------
+
+.. class:: ElasticSearch
+
+    .. automethod:: aliases(index=None[, other kwargs listed below])
+
     .. automethod:: close_index(index)
 
-    .. automethod:: cluster_state([other kwargs listed below])
+    .. automethod:: cluster_state(metric='_all', index='_all'[, other kwargs listed below])
 
     .. automethod:: count(query[, other kwargs listed below])
 
@@ -60,7 +84,7 @@ so it'll be hard to miss.
 
     .. automethod:: health(index=None[, other kwargs listed below])
 
-    .. automethod:: index(index, doc_type, doc, id=None, force_insert=False[, other kwargs listed below])
+    .. automethod:: index(index, doc_type, doc, id=None, overwrite_existing=True[, other kwargs listed below])
 
     .. automethod:: more_like_this(index, doc_type, id, fields, body=''[, other kwargs listed below])
 
@@ -91,6 +115,8 @@ so it'll be hard to miss.
     .. automethod:: update_settings(index, settings)
 
 
+.. _error-handling:
+
 Error Handling
 ==============
 
@@ -114,27 +140,22 @@ exceptions:
 Debugging
 =========
 
-pyelasticsearch logs to the ``pyelasticsearch`` logger using the
-Python logging module. If you configure that to show DEBUG-level
-messages, then it'll show the requests in curl form, responses, and
-when it marks servers as dead.
-
-Additionally, pyelasticsearch uses Requests which logs to the
-``requests`` logger using the Python logging module. If you configure
-that to show INFO-level messages, then you'll see all that stuff.
+pyelasticsearch logs to the ``elasticsearch.trace`` logger using the Python
+logging module. If you configure that to show INFO-level messages, then it'll
+show the requests in curl form and their responses. To see when a server is
+marked as dead, follow the ``elasticsearch`` logger.
 
 ::
 
     import logging
 
-    logging.getLogger('pyelasticsearch').setLevel(logging.DEBUG)
-    logging.getLogger('requests').setLevel(logging.DEBUG)
+    logging.getLogger('elasticsearch.trace').setLevel(logging.INFO)
+    logging.getLogger('elasticsearch').setLevel(logging.INFO)
 
 
 .. Note::
 
-   This assumes that logging is already set up with something like
-   this::
+   This assumes that logging is already set up with something like this::
 
        import logging
 
@@ -143,16 +164,9 @@ that to show INFO-level messages, then you'll see all that stuff.
 
 pyelasticsearch will log lines like::
 
-    DEBUG:pyelasticsearch:Making a request equivalent to this: curl
+    INFO:elasticsearch.trace: curl
     -XGET 'http://localhost:9200/fooindex/testdoc/_search' -d '{"fa
     cets": {"topics": {"terms": {"field": "topics"}}}}'
 
 
-You can copy and paste the curl line and it'll work on the command
-line.
-
-.. Note::
-
-   If you add a ``pretty=1`` to the query string of the url that
-   you're curling, then ElasticSearch will return a prettified
-   response that's easier to read.
+You can copy and paste the curl line, and it'll work on the command line.
